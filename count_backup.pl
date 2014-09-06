@@ -267,4 +267,4 @@ NETWAYS GmbH, 2009, http://www.netways.de.
 
 Written by NETWAYS GmbH <info@netways.de>
 
-Please report bugs through the contact of Nagios Exchange, http://www.nagiosexchange.org. 
+Please report bugs at https://www.netways.org/projects/plugins
