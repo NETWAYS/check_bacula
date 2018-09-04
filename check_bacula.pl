@@ -56,6 +56,7 @@ my $jobfiles        = 0;
 my $jobbytes        = 0;
 my $joberrors       = 0;
 my $jobmissingfiles = 0;
+my $opt_dbdriver    = 'mysql';
 
 # predeclared subs
 sub print_help;
@@ -89,6 +90,7 @@ GetOptions(
 	"db=s"       => \$opt_dbname,
 	"dbuser=s"   => \$opt_dbuser,
 	"dbpass=s"   => \$opt_dbpass,
+	"dbdriver=s" => \$opt_dbdriver,
 	"h"          => \$opt_help,
 	"help"       => \$opt_help,
 	"usage"      => \$opt_usage,
@@ -105,7 +107,7 @@ if ($opt_help) {
 if ( $opt_host && $opt_warning && $opt_critical ) {
 
 	# setting up db connection
-	my $dsn = "DBI:mysql:database=$opt_dbname;host=$opt_dbhost";
+	my $dsn = "DBI:$opt_dbdriver:database=$opt_dbname;host=$opt_dbhost";
 	my $dbh = DBI->connect( $dsn, $opt_dbuser, $opt_dbpass ) or die "Error connecting to: '$dsn': $DBI::errstr\n";
 
 	# setting backup age
@@ -118,8 +120,14 @@ if ( $opt_host && $opt_warning && $opt_critical ) {
 
 	$opt_host .=  " ".$opt_job	if(defined $opt_job);
 
-	$sql = "SELECT count(*) as 'count',sum(JobFiles),sum(JobBytes),sum(JobErrors),sum(JobMissingFiles) from Job where Name='" . 
-	$opt_host."' and JobStatus='T' and EndTime <> '' and EndTime <= '".$date_start."' and EndTime >= '".$date_stop."';";
+        # Use correct statement depending on dbdriver
+        if($opt_dbdriver eq 'Pg') {
+                $sql = "SELECT count(*) as count,sum(JobFiles),sum(JobBytes),sum(JobErrors),sum(JobMissingFiles) from Job where Name='" .
+                $opt_host."' and JobStatus='T' and EndTime IS NOT NULL  and EndTime <= '".$date_start."' and EndTime >= '".$date_stop."';";
+        } else {
+                $sql = "SELECT count(*) as 'count',sum(JobFiles),sum(JobBytes),sum(JobErrors),sum(JobMissingFiles) from Job where Name='" .
+                $opt_host."' and JobStatus='T' and EndTime <> '' and EndTime <= '".$date_start."' and EndTime >= '".$date_stop."';";
+        }
 
 	# getting backups from db
 	my $sth = $dbh->prepare($sql) or die "Error preparing statemment", $dbh->errstr;
@@ -271,6 +279,10 @@ Bacula database user
 =item B<--dbpass>
 
 Bacula database password
+
+=item B<--dbdriver>
+
+DBI driver to use, default mysql
 
 =back
 
